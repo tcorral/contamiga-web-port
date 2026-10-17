@@ -38,6 +38,7 @@ export function App() {
   const [alerta, setAlerta] = useState(null);
   const [creditos, setCreditos] = useState(false);
   const [fin, setFin] = useState(false);
+  const [tutorial, setTutorial] = useState(false);
 
   useEffect(() => {
     const cargado = cargarLocal();
@@ -48,6 +49,28 @@ export function App() {
   useEffect(() => {
     if (libro) guardarLocal(libro);
   }, [libro]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tutorial") !== "1") return;
+    setTutorial(true);
+    params.delete("tutorial");
+    const consulta = params.toString();
+    const siguiente = window.location.pathname + (consulta ? `?${consulta}` : "") + window.location.hash;
+    window.history.replaceState(null, "", siguiente);
+  }, []);
+
+  useEffect(() => {
+    if (!tutorial) return undefined;
+    const tecla = (evento) => {
+      if (evento.key !== "Escape") return;
+      evento.preventDefault();
+      evento.stopPropagation();
+      setTutorial(false);
+    };
+    window.addEventListener("keydown", tecla, true);
+    return () => window.removeEventListener("keydown", tecla, true);
+  }, [tutorial]);
 
   if (!libro) {
     return <div className="mesa" />;
@@ -78,10 +101,24 @@ export function App() {
               <p>2026</p>
               <p>Para los aficionados al Commodore Amiga</p>
               <p><a href={`${import.meta.env.BASE_URL}Manual-ContAmiga.pdf`} target="_blank" rel="noreferrer">Manual de uso</a></p>
+              <p><button type="button" className="enlace-menu" onClick={() => { setCreditos(false); setTutorial(true); }}>Ver el tutorial</button></p>
             </div>
           )}
         </header>
         {fin ? <Fin onVolver={() => { setFin(false); ir("menu"); }} /> : <Pantalla />}
+        {tutorial && (
+          <div className="alerta tutorial" onMouseDown={() => setTutorial(false)}>
+            <div className="tutorial-caja" role="dialog" aria-label="Tutorial de ContAmiga" onMouseDown={(evento) => evento.stopPropagation()}>
+              <div className="tutorial-barra">
+                <span>TUTORIAL</span>
+                <button type="button" onClick={() => setTutorial(false)}>CERRAR</button>
+              </div>
+              <video controls autoPlay src={`${import.meta.env.BASE_URL}ContAmiga-web-tutorial.mp4`}>
+                Tu navegador no puede reproducir el vídeo.
+              </video>
+            </div>
+          </div>
+        )}
         {alerta && (
           <div className="alerta" onMouseDown={() => setAlerta(null)}>
             <div className="requester" onMouseDown={(evento) => evento.stopPropagation()}>
